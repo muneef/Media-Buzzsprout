@@ -83,20 +83,20 @@ function emaudio_buzzsprout_settings() {
   $form = array();
   $form['buzzsprout']['media_buzzsprout_api_key'] = array(
     '#type' => 'textfield',
-    '#title' => t('Open API Key'),
-    '#description' => t('Your buzzsprout Open API Key'),
+    '#title' => t('Buzzsprout Userid'),
+    '#description' => t('Buzzsprout Userid'),
     '#default_value' => variable_get('media_buzzsprout_api_key', ''),
     '#size' => 40,
     '#maxlength' => 40,
   );
-  $media_options = array('default' => 'Default Player', 'wm' => 'Windows Media', 'rm' => 'Real Media', mp3 => 'MP3');
-  $form['buzzsprout']['media_buzzsprout_default_format'] = array(
-    '#type' => 'select',
-	'#title' => t('Media Format'),
-	'#description' => t('The desired media format from BUZZSPROUT'),
-	'#default_value' => variable_get('media_buzzsprout_default_format', 'default'), 
-	'#options' => $media_options,
-  );	
+  $form['buzzsprout']['media_buzzsprout_username'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Username'),
+    '#description' => t('Buzzsprout Username'),
+    '#default_value' => variable_get('media_buzzsprout_username', ''),
+    '#size' => 40,
+    '#maxlength' => 40,
+  );
   return $form;
 }
 
@@ -125,9 +125,6 @@ function emaudio_buzzsprout_extract($parse = '') {
   
   
   return array(
-    // First test for the embed code.
-    //http://www.buzzsprout.org/templates/story/story.php?storyId=113653755
-	//<embed src="http://www.buzzsprout.org/v2/?i=113834285&#38;m=113856702&#38;t=audio" height="383" wmode="opaque" width="400" base="http://www.buzzsprout.org"></embed>
 	'@buzzsprout\.com/[0-9]+/(.+)@i',
   );
 }
@@ -151,9 +148,11 @@ function emaudio_buzzsprout_data_version() {
 function emaudio_buzzsprout_data($field, $item) {
   $data = array();
   $apikey = variable_get('buzzsprout_api_key', '');
-  //print '<code>'.'http://www.jupiqon.com/jupi/buzzsprout/?do=3284/'.$item['value'].'</code>';
-  //  $data = emfield_request_xml('buzzsprout', 'http://www.jupiqon.com/jupi/buzzsprout/?do=http://jupiqon.buzzsprout.com/3284/21910-unleashing-the-creative-potential-of-the-bottom-of-the-economic-pyramid', array(), TRUE, FALSE, $item['value']);
-  $data = emfield_request_xml('buzzsprout', 'http://f.muneef.in/500.php?q=http://jupiqon.buzzsprout.com/'.$item['value'], array(), FALSE, FALSE, $item['value']);
+  
+  // inbuilt fetch.
+  $data=buzzsprout_fetcher($item['value']);
+  // use this to fetch xml
+  // $data = emfield_request_xml('buzzsprout', 'http://f.muneef.in/500.php?q=http://jupiqon.buzzsprout.com/'.$item['value'], array(), FALSE, FALSE, $item['value']);
   
   $data['audio_id'] = $item['value'];
   $data['emaudio_buzzsprout_version'] = EMAUDIO_BUZZSPROUT_DATA_VERSION;
@@ -251,3 +250,35 @@ function emaudio_buzzsprout_emfield_subtheme() {
   );
   return $themes;
 }
+
+	function get_external_css($file){
+		$h1tags = preg_match_all('/(rel=)(".*") href=(".*")/im',$file,$patterns);
+		$res = array();
+		array_push($res,$patterns);
+		array_push($res,count($patterns[2]));
+		return $res; 
+	} 
+	
+	function buzzsprout_fetcher($buzz_item_link)
+	{
+		$apikey = variable_get('buzzsprout_api_key', '');
+		$username = variable_get('buzzsprout_username', '');
+		
+		$url=$buzz_item_link;
+		$request = drupal_http_request('http://'.$username.'.buzzsprout.com/'.$apikey.'/'.$url);
+		$data = $request->data;
+
+		$rels=get_external_css($data);
+		
+		foreach($rels[0][0] as $x){
+			if(preg_match_all("/audio_src/",$x,$mm)){
+				preg_match_all('/href=\"(.*)\"/',$x,$mm);
+				
+				$file['src']=$mm[1][0];				
+				$titre = eregi("<title>(.*)</title>",$data,$regs);
+				$titl=$regs[1];
+				$file['title']=$titl;
+				return $file;
+			}
+		}
+	}
