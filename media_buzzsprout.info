@@ -1,0 +1,6 @@
+name = Media: Buzzsprout
+description = Embedded Audio Field provider file for Buzzsprout
+core = 6.x
+dependencies[] = emaudio
+package = Media
+

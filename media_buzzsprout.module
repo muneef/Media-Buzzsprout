@@ -1,0 +1,12 @@
+<?php
+
+/**
+ *  @file
+ *  Embedded Audio Field provider file for Buzzsprout.
+ */
+
+function media_buzzsprout_emfield_providers($module, $provider = NULL) {
+  if ($module == 'emaudio') {
+    return drupal_system_listing("$provider\.inc$", drupal_get_path('module', 'media_buzzsprout') ."/providers", 'name', 0);
+  }
+}
